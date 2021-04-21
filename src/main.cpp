@@ -174,6 +174,24 @@ int track(cv::dnn::Net* net,String model) {
     return 0;
 }
 
+void printHelp() {
+    std::cout << "FacemarkTrain" << " train <dnn location> <dataset folder> <output model file> " << std::endl;
+    std::cout << "FacemarkTrain" << " test  <dnn location> <model> <image> " << std::endl;
+    std::cout << "FacemarkTrain" << " track <dnn location> <model> " << std::endl << std::endl;
+
+    std::cout << "Commands:" << std::endl;
+    std::cout << "train - Train the Facemark algorithm to work with the dnn" << std::endl;
+    std::cout << "test - Test the Facemark algorithm with a picture" << std::endl;
+    std::cout << "track - Test the Facemark algorithm with a webcam" << std::endl << std::endl;
+
+    std::cout << "Parameters:" << std::endl;
+    std::cout << "dnn location - Location of the model.prototxt & model.caffemodel files" << std::endl;
+    std::cout << "dataset folder - Location of the dataset with the annotations.txt & images.txt files." << std::endl;
+    std::cout << "model - File to load into Facemark as input" << std::endl;
+    std::cout << "output model file - File to save into Facemark as output" << std::endl;
+    std::cout << "image - File to load to test Facemark on" << std::endl << std::endl;
+}
+
 int main(int argc, char* argv[]){
     try
     {
@@ -182,16 +200,17 @@ int main(int argc, char* argv[]){
         }
     
         auto command = String(argv[1]);
+        auto caffeLocation = String(argv[2]);
 
-        const std::string caffeConfigFile = "src/models/facedetect/model.prototxt";
-        const std::string caffeWeightFile = "src/models/facedetect/model.caffemodel";
+        const std::string caffeConfigFile = caffeLocation + "model.prototxt";
+        const std::string caffeWeightFile = caffeLocation + "model.caffemodel";
         cv::dnn::Net net = cv::dnn::readNetFromCaffe(caffeConfigFile, caffeWeightFile);
 
         if(command == "train") {
-            if(argc != 4) throw std::invalid_argument("Invalid usage");
+            if(argc != 5) throw std::invalid_argument("Invalid usage");
 
-            auto dataset = String(argv[2]);
-            auto model = String(argv[3]);
+            auto dataset = String(argv[3]);
+            auto model = String(argv[4]);
         
             FacemarkLBF::Params params;
             params.stages_n=5; // amount of refinement stages
@@ -223,7 +242,7 @@ int main(int argc, char* argv[]){
                 image = imread(images_train[i].c_str());
                 loadFacePoints(landmarks_train[i],facial_points);
                 facemark->addTrainingSample(image, facial_points);
-                std::cout << "Adding Data. "  << std::to_string(i) << std::endl;
+                std::cout << "Adding Data. "  << std::to_string(i+1) << "/" << images_train.size() << std::endl;
             }
 
             destroyAllWindows();
@@ -231,17 +250,28 @@ int main(int argc, char* argv[]){
             facemark->training();
         }
         else if(command == "test") {
+            if (argc != 5) throw std::invalid_argument("Invalid usage");
             std::cout << "Testing..." << std::endl;
-            auto model = String(argv[2]);
-            auto image = String(argv[3]);
+            auto model = String(argv[3]);
+            auto image = String(argv[4]);
             show(&net, model, image);
         }
         else if(command == "track") {
-            if(argc != 3) throw std::invalid_argument("Invalid usage");
-            auto model = String(argv[2]);
+            if(argc != 4) throw std::invalid_argument("Invalid usage");
+            auto model = String(argv[3]);
             track(&net, model);
             return 0;
+
         }
+        else if (command == "help") {
+            printHelp();
+        }
+        
+    }
+    catch (const std::invalid_argument& e) {
+        std::cout << "error: " << e.what() << std::endl;
+        printHelp();
+        return 1;
     }
     catch (const std::exception& e)
     {
