@@ -1,4 +1,22 @@
 
+## Dependencies
+
+* opencv2
+* vtk
+* hdf5
+
+### ArchLinux dependency instructions
+
+```
+pacman -S opencv vtk hdf5
+```
+
+### Debian/Ubuntu dependency instructions
+
+```
+```
+
+### Windows
 
 ## Building
 
@@ -7,7 +25,7 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release .
 cmake --build build/
 ```
 
-## run (dev version)
+## Usage (dev version)
 
 Get a training dataset. You can download either
 
@@ -30,7 +48,21 @@ Train the model:
 Test the model:
 
 ```
-./build/FacemarkTrain camera src/models/facemark/model.yaml
+./build/FacemarkTrain test src/models/facemark/model.yaml helen/testset/3023909862_1.jpg
+```
+
+Interact with the model:
+
+```
+./build/FacemarkTrain track src/models/facemark/model.yaml
 ```
 
 
+## Install
+
+...
+
+
+## Use
+
+...
