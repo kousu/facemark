@@ -49,8 +49,9 @@ bool myDetector(InputArray image, OutputArray faces, cv::dnn::Net *net){
 
   cv::resize(image.getMat(), frameResized, cv::Size(300, 300));
 
-  if(image.channels()!=3) {
-      // convert greyscale to RGB?
+  if(image.channels()==1) {
+      // convert greyscale to RGB
+      // the DNN was trained on color images
       cvtColor(frameResized,frameResized,COLOR_GRAY2BGR);
   }
 
@@ -124,8 +125,16 @@ int show(cv::dnn::Net* net,String model,String image) {
         }
 
     }
+
+    namedWindow("result",cv::WINDOW_NORMAL); // fit image to screen: https://stackoverflow.com/questions/24842382/fitting-an-image-to-screen-using-imshow-opencv
     imshow("result", frame1);
-    waitKey(0);
+    std::cout << "Press q to see next image." << std::endl;
+    while(true) {
+        auto key = waitKey(0);
+        if(key == 'q') {
+            break;
+        }
+    }
     
     return 0;
 }
