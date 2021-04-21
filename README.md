@@ -24,10 +24,13 @@ find helen/trainset/ -name "*.pts" | tee helen/trainset/annotations.txt
 Train the model:
 
 ```
-./build/FacemarkTrain helen/trainset src/models/facemark/model.yaml
+./build/FacemarkTrain train helen/trainset src/models/facemark/model.yaml
 ```
 
 Test the model:
 
-...
+```
+./build/FacemarkTrain camera src/models/facemark/model.yaml
+```
+
 

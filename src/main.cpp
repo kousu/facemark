@@ -49,7 +49,10 @@ bool myDetector(InputArray image, OutputArray faces, cv::dnn::Net *net){
 
   cv::resize(image.getMat(), frameResized, cv::Size(300, 300));
 
-  cvtColor(frameResized,frameResized,8);
+  if(image.channels()!=3) {
+      // convert greyscale to RGB?
+      cvtColor(frameResized,frameResized,COLOR_GRAY2BGR);
+  }
 
   //convert to blob
   cv::Mat inputBlob = cv::dnn::blobFromImage(frameResized, 1, cv::Size(300, 300), meanVal, false, false);
@@ -91,6 +94,40 @@ bool myDetector(InputArray image, OutputArray faces, cv::dnn::Net *net){
 
     Mat(_faces).copyTo(faces);
     return true;
+}
+
+
+int show(cv::dnn::Net* net,String model,String image) {
+
+    // Create an instance of Facemark
+    cv::Ptr<cv::face::FacemarkLBF> facemark = cv::face::FacemarkLBF::create();
+
+    // Load landmark detector
+    facemark->loadModel(model);
+
+    cv::Mat frame1;
+    frame1 = imread(image.c_str());
+    if (frame1.empty()) return 1; // end of video stream
+
+    std::vector<cv::Rect> faces;
+    myDetector(frame1, faces, net);
+
+    std::vector< std::vector<cv::Point2f> > landmarks;
+
+    // Run landmark detector
+    bool success = facemark->fit(frame1, faces, landmarks);
+    if (success) {
+        for (int j = 0; j < faces.size(); j++) {
+            face::drawFacemarks(frame1, landmarks[j], Scalar(0, 0, 255));
+            cv::rectangle(frame1, faces[j], cv::Scalar(0, 255, 0), 2, 4);
+
+        }
+
+    }
+    imshow("result", frame1);
+    waitKey(0);
+    
+    return 0;
 }
 
 int track(cv::dnn::Net* net,String model) {
@@ -195,11 +232,13 @@ int main(int argc, char* argv[]){
         }
         else if(command == "test") {
             std::cout << "Testing..." << std::endl;
-            throw std::invalid_argument("Not implemented");
+            auto model = String(argv[2]);
+            auto image = String(argv[3]);
+            show(&net, model, image);
         }
         else if(command == "track") {
             if(argc != 3) throw std::invalid_argument("Invalid usage");
-            auto model = argv[2];
+            auto model = String(argv[2]);
             track(&net, model);
             return 0;
         }
