@@ -4,7 +4,7 @@
 #include "opencv2/dnn.hpp"
 #include "opencv2/face/facemark_train.hpp"
 
-const float confidenceThreshold = 0.80;
+const float confidenceThreshold = 0.80f;
 const cv::Scalar meanVal(104.0, 177.0, 123.0);
 
 using namespace cv;
@@ -201,6 +201,13 @@ void printHelp() {
     std::cout << "image - File to load to test Facemark on" << std::endl << std::endl;
 }
 
+dnn::Net getNet(String caffeLocation) {
+    const std::string caffeConfigFile = caffeLocation + "model.prototxt";
+    const std::string caffeWeightFile = caffeLocation + "model.caffemodel";
+    return cv::dnn::readNetFromCaffe(caffeConfigFile, caffeWeightFile);
+}
+
+
 int main(int argc, char* argv[]){
     try
     {
@@ -209,13 +216,12 @@ int main(int argc, char* argv[]){
         }
     
         auto command = String(argv[1]);
-        auto caffeLocation = String(argv[2]);
+        
 
-        const std::string caffeConfigFile = caffeLocation + "model.prototxt";
-        const std::string caffeWeightFile = caffeLocation + "model.caffemodel";
-        cv::dnn::Net net = cv::dnn::readNetFromCaffe(caffeConfigFile, caffeWeightFile);
+        
 
         if(command == "train") {
+
             if(argc != 5) throw std::invalid_argument("Invalid usage");
 
             auto dataset = String(argv[3]);
@@ -244,6 +250,9 @@ int main(int argc, char* argv[]){
             Mat image;
             std::vector<Point2f> facial_points;
 
+            auto caffeLocation = String(argv[2]);
+            auto net = getNet(caffeLocation);
+
             facemark->setFaceDetector((FN_FaceDetector)myDetector,&net); // we must guarantee proper lifetime of "config" object
 
             std::cout << "Adding Data." << std::endl;
@@ -251,7 +260,7 @@ int main(int argc, char* argv[]){
                 image = imread(images_train[i].c_str());
                 loadFacePoints(landmarks_train[i],facial_points);
                 facemark->addTrainingSample(image, facial_points);
-                std::cout << "Adding Data. "  << std::to_string(i+1) << "/" << images_train.size() << std::endl;
+                std::cout << "Adding Data: "  << std::to_string(i+1) << "/" << images_train.size() << std::endl;
             }
 
             destroyAllWindows();
@@ -263,16 +272,20 @@ int main(int argc, char* argv[]){
             std::cout << "Testing..." << std::endl;
             auto model = String(argv[3]);
             auto image = String(argv[4]);
+            auto caffeLocation = String(argv[2]);
+            auto net = getNet(caffeLocation);
             show(&net, model, image);
         }
         else if(command == "track") {
             if(argc != 4) throw std::invalid_argument("Invalid usage");
             auto model = String(argv[3]);
+            auto caffeLocation = String(argv[2]);
+            auto net = getNet(caffeLocation);
             track(&net, model);
             return 0;
 
         }
-        else if (command == "help") {
+        else{
             printHelp();
         }
         
