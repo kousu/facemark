@@ -49,6 +49,8 @@ bool myDetector(InputArray image, OutputArray faces, cv::dnn::Net *net){
 
   cv::resize(image.getMat(), frameResized, cv::Size(300, 300));
 
+  cvtColor(frameResized,frameResized,8);
+
   //convert to blob
   cv::Mat inputBlob = cv::dnn::blobFromImage(frameResized, 1, cv::Size(300, 300), meanVal, false, false);
 
@@ -135,67 +137,77 @@ int track(cv::dnn::Net* net,String model) {
     return 0;
 }
 
-int main(){
+int main(int argc, char* argv[]){
     try
     {
-        
-        FacemarkLBF::Params params;
-        params.model_filename = "dnn_helen_aye3d.model";
-        params.stages_n=5; // amount of refinement stages
-        params.tree_n=6; // number of tree in the model for each landmark point
-        params.tree_depth=5; //he depth of decision tree
-        params.cascade_face = "none"; //cascade file for default detector
-        params.initShape_n = 10; //multiplier for augment the training data
-        params.bagging_overlap = 0.4; //overlap ratio for training the LBF feature
-        params.save_model = true;
-        params.verbose = true;
-        params.seed = 0; //seed
+        if(argc < 2) {
+            throw std::invalid_argument("Invalid usage");
+        }
+    
+        auto command = String(argv[1]);
 
-        Ptr<FacemarkTrain> facemark = FacemarkLBF::create(params);
-  
-
-        std::vector<String> images_train;
-        std::vector<String> landmarks_train;
-        loadDatasetList("helen/images.txt","helen/annotations.txt",images_train,landmarks_train);
-
-        Mat image;
-        std::vector<Point2f> facial_points;
-
-        const std::string caffeConfigFile = "model.prototxt";
-        const std::string caffeWeightFile = "model.caffemodel";
+        const std::string caffeConfigFile = "src/models/facedetect/model.prototxt";
+        const std::string caffeWeightFile = "src/models/facedetect/model.caffemodel";
         cv::dnn::Net net = cv::dnn::readNetFromCaffe(caffeConfigFile, caffeWeightFile);
 
-        std::cout << "Skip training? (yes/no)" << std::endl;
-        String f;
-        std::cin >> f;
-        if(f == "yes")
-            goto label;
+        if(command == "train") {
+            if(argc != 4) throw std::invalid_argument("Invalid usage");
 
-        facemark->setFaceDetector((FN_FaceDetector)myDetector,&net); // we must guarantee proper lifetime of "config" object
-
-        std::cout << "Adding Data." << std::endl;
-        for(size_t i=0;i<images_train.size();i++){
-            image = imread(images_train[i].c_str());
-            loadFacePoints(landmarks_train[i],facial_points);
-            facemark->addTrainingSample(image, facial_points);
-            std::cout << "Adding Data. "  << std::to_string(i) << std::endl;
-        }
-
-        destroyAllWindows();
-        std::cout << "Training..." << std::endl;
-        facemark->training();
-
-        label:
-        std::cout << "Testing..." << std::endl;
-
-        track(&net, params.model_filename);
-        return 1;
+            auto dataset = String(argv[2]);
+            auto model = String(argv[3]);
         
+            FacemarkLBF::Params params;
+            params.stages_n=5; // amount of refinement stages
+            params.tree_n=6; // number of tree in the model for each landmark point
+            params.tree_depth=5; //he depth of decision tree
+            params.cascade_face = "none"; //cascade file for default detector
+            params.initShape_n = 10; //multiplier for augment the training data
+            params.bagging_overlap = 0.4; //overlap ratio for training the LBF feature
+            params.save_model = true;
+            params.verbose = true;
+            params.seed = 0; //seed
+
+            params.model_filename = model;
+
+            Ptr<FacemarkTrain> facemark = FacemarkLBF::create(params);
+      
+
+            std::vector<String> images_train;
+            std::vector<String> landmarks_train;
+            loadDatasetList(dataset+"/images.txt",dataset+"/annotations.txt",images_train,landmarks_train);
+
+            Mat image;
+            std::vector<Point2f> facial_points;
+
+            facemark->setFaceDetector((FN_FaceDetector)myDetector,&net); // we must guarantee proper lifetime of "config" object
+
+            std::cout << "Adding Data." << std::endl;
+            for(size_t i=0;i<images_train.size();i++){
+                image = imread(images_train[i].c_str());
+                loadFacePoints(landmarks_train[i],facial_points);
+                facemark->addTrainingSample(image, facial_points);
+                std::cout << "Adding Data. "  << std::to_string(i) << std::endl;
+            }
+
+            destroyAllWindows();
+            std::cout << "Training..." << std::endl;
+            facemark->training();
+        }
+        else if(command == "test") {
+            std::cout << "Testing..." << std::endl;
+            throw std::invalid_argument("Not implemented");
+        }
+        else if(command == "track") {
+            if(argc != 3) throw std::invalid_argument("Invalid usage");
+            auto model = argv[2];
+            track(&net, model);
+            return 0;
+        }
     }
     catch (const std::exception& e)
     {
         std::cout << "error: " << e.what() << std::endl;
-        throw;
+        return 1;
     }
   
     

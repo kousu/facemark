@@ -1,1 +1,4 @@
-sources: model.* - ??? 
+sources:
+
+* model.* - a neural network face detector
+* 
