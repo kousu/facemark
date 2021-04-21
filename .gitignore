@@ -1,4 +1,6 @@
 helen/
 ibug/
 
+build/
+
 CMakeCache.txt
